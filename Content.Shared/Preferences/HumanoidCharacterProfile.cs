@@ -2,6 +2,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Content.Shared._Sirena.Humanoid;
+using Content.Shared._RedStar.Records; // RS14
 using Content.Shared.CCVar;
 using Content.Shared.Chat.Prototypes;
 using Content.Shared.EntityEffects.Effects;
@@ -112,8 +113,13 @@ namespace Content.Shared.Preferences
         [DataField]
         public HumanoidCharacterAppearance Appearance { get; set; } = new();
 
+        // RS14-start
         [DataField]
-        public float Height = 1f; // RS14
+        public float Height = 1f;
+
+        [DataField]
+        public CharacterDossier Dossier = new();
+        // RS14-end
 
         /// <summary>
         /// When spawning into a round what's the preferred spot to spawn.
@@ -211,6 +217,7 @@ namespace Content.Shared.Preferences
         {
             ErpStatus = other.ErpStatus; // RS14
             Height = other.Height; // RS14
+            Dossier = other.Dossier.DeepCopy(); // RS14
         }
 
         /// <summary>
@@ -678,6 +685,7 @@ namespace Content.Shared.Preferences
             if (TTSVoice != other.TTSVoice) return false; // Corvax-TTS
             if (ErpStatus != other.ErpStatus) return false; // RS14
             if (Height != other.Height) return false; // RS14
+            if (!Dossier.MemberwiseEquals(other.Dossier)) return false; // RS14
             return Appearance.Equals(other.Appearance);
         }
 
@@ -843,6 +851,8 @@ namespace Content.Shared.Preferences
             Height = MathF.Round(Height, 2);
             if (speciesPrototype.HeightAdjustable)
                 Height = Math.Clamp(Height, speciesPrototype.MinHeight, speciesPrototype.MaxHeight);
+            Dossier ??= new CharacterDossier();
+            Dossier.EnsureValid();
             // RS14-end
 
             // Corvax-TTS-start
