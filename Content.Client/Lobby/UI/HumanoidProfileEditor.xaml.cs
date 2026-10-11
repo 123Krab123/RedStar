@@ -153,6 +153,8 @@ namespace Content.Client.Lobby.UI
 
             TabContainer.SetTabTitle(0, Loc.GetString("humanoid-profile-editor-appearance-tab"));
 
+            InitializeHeightControls(); // RS14
+
             #region Sex
 
             SexButton.OnItemSelected += args =>
@@ -201,6 +203,7 @@ namespace Content.Client.Lobby.UI
             #endregion Gender
 
             RefreshSpecies();
+            UpdateHeightControls(); // RS14
 
             SpeciesButton.OnItemSelected += args =>
             {
@@ -387,6 +390,7 @@ namespace Content.Client.Lobby.UI
             UpdateSkinColor();
             UpdateSpawnPriorityControls();
             UpdateAgeEdit();
+            UpdateHeightControls(); // RS14
             UpdateEyePickers();
             UpdateSaveButton();
             UpdateMarkings();
