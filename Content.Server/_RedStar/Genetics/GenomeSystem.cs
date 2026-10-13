@@ -50,6 +50,9 @@ public sealed partial class GenomeSystem : EntitySystem
         return GenomeOperationResult.Success;
     }
 
+    public GenomeOperationResult ValidateSnapshot(GenomeSnapshot snapshot) =>
+        ValidateGenome(snapshot.GenomeId, snapshot.GetGenes());
+
     [SubscribeLocalEvent]
     private void OnComponentInit(Entity<GenomeComponent> ent, ref ComponentInit args)
     {
@@ -75,7 +78,10 @@ public sealed partial class GenomeSystem : EntitySystem
     private void OnMapInit(Entity<GenomeComponent> ent, ref MapInitEvent args)
     {
         if (ent.Comp.GenomeGenerated)
+        {
+            RaiseLocalEvent(ent.Owner, new GenomeReadyEvent());
             return;
+        }
 
         var result = GenerateGenes(ent.Comp.GenomeId, out var genes);
         if (result != GenomeOperationResult.Success)

@@ -1,4 +1,5 @@
-using System.Linq;
+using Content.Server._RedStar.Genetics;
+using Content.Shared._RedStar.Genetics;
 using Content.Server.Power.EntitySystems;
 using Content.Shared._RedStar.Xenobiology.Components.Container;
 using Content.Shared._RedStar.Xenobiology.Components.Machines;
@@ -10,19 +11,23 @@ using Content.Shared.Popups;
 using Content.Shared.Power;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Containers;
+using Robust.Shared.Random;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Timing;
 
 namespace Content.Server._RedStar.Xenobiology;
 public sealed partial class MutagenicInjectorSystem : SharedMutagenicInjectorSystem
 {
-    [Dependency] private CellSystem _cells = default!;
     [Dependency] private SharedCellSystem _cell = default!;
     [Dependency] private ItemSlotsSystem _itemSlots = default!;
     [Dependency] private SharedPopupSystem _popup = default!;
     [Dependency] private SharedAudioSystem _audio = default!;
     [Dependency] private IGameTiming _timing = default!;
-    [Dependency] private IPrototypeManager _prototypes = default!;
+    [Dependency] private GenomeSystem _genomes = default!;
+    [Dependency] private IRobustRandom _random = default!;
+
+    protected override bool IsValidRecipient(EntityUid recipient) =>
+        base.IsValidRecipient(recipient) && HasComp<GenomeComponent>(recipient);
 
     [SubscribeLocalEvent]
     private void OnActivateInWorld(Entity<CellMutagenicInjectorComponent> ent, ref ActivateInWorldEvent args)
@@ -85,7 +90,7 @@ public sealed partial class MutagenicInjectorSystem : SharedMutagenicInjectorSys
             return false;
         }
 
-        if (!dishContainer.Cells.Exists(cell => !cell.Traits.IsEmpty))
+        if (!dishContainer.Cells.Exists(cell => cell.GeneCount > 0))
         {
             _popup.PopupEntity(Loc.GetString("mutagenic-injector-no-traits"), ent, PopupType.MediumCaution);
             return false;
@@ -129,22 +134,61 @@ public sealed partial class MutagenicInjectorSystem : SharedMutagenicInjectorSys
         if (subject is not { } mob || dish is not { } dishUid ||
             !TryComp<CellContainerComponent>(dishUid, out var dishContainer) ||
             dishContainer.Revision != ent.Comp.InjectionDishRevision || dishContainer.Empty ||
-            !IsValidRecipient(mob))
+            !IsValidRecipient(mob) || !_genomes.TryGetSnapshot(mob, out var recipient) || recipient is null)
         {
             CancelInjection(ent);
             return;
         }
 
-        var samples = dishContainer.Cells.ToArray();
-        _cells.GetOrCreateNativeSample(mob);
-        foreach (var sample in samples)
-            _cell.ApplyCellTraits(mob, sample);
+        var samples = new List<(GenomeSnapshot Genome, float Stability)>();
+        foreach (var sample in dishContainer.Cells)
+        {
+            if (!sample.HasGenome)
+                continue;
+            if (sample.GetGenome() is not { } genome ||
+                _genomes.ValidateSnapshot(genome) != GenomeOperationResult.Success)
+            {
+                CancelInjection(ent);
+                return;
+            }
+            samples.Add((genome, sample.Stability));
+        }
+
+        if (samples.Count == 0)
+        {
+            CancelInjection(ent);
+            return;
+        }
+
+        var originalGenes = recipient.GetGenes();
+        var genes = new Dictionary<ProtoId<GenePrototype>, GeneState>(originalGenes);
+        foreach (var (genome, stability) in samples)
+        {
+            foreach (var (id, state) in genome.GetGenes())
+            {
+                if (!_random.Prob(Math.Clamp(stability, 0f, 1f)))
+                    continue;
+                genes[id] = state;
+            }
+        }
+
+        var changed = 0;
+        foreach (var (id, state) in genes)
+        {
+            if (!originalGenes.TryGetValue(id, out var original) ||
+                original.Allele != state.Allele || original.Number != state.Number)
+                changed++;
+        }
+
+        if (_genomes.ReplaceGenome(mob, new GenomeSnapshot(recipient.GenomeId, genes)) != GenomeOperationResult.Success)
+        {
+            CancelInjection(ent);
+            return;
+        }
 
         _cell.ClearCells((dishUid, dishContainer));
         EjectBody(ent);
-        var traits = string.Join(", ", samples.SelectMany(sample => sample.Traits).Distinct()
-            .Select(id => Loc.GetString(_prototypes.Index(id).Name)));
-        _popup.PopupEntity(Loc.GetString("mutagenic-injector-success", ("traits", traits)), ent, PopupType.Medium);
+        _popup.PopupEntity(Loc.GetString("mutagenic-injector-success", ("genes", changed)), ent, PopupType.Medium);
     }
 
     protected override void CancelInjection(Entity<CellMutagenicInjectorComponent> ent)

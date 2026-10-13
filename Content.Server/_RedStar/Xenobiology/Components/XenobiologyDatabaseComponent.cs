@@ -3,7 +3,7 @@ using Content.Shared._RedStar.Xenobiology;
 namespace Content.Server._RedStar.Xenobiology.Components;
 
 /// <summary>
-/// The genome library hosted by a research server. Sent to clients through machine UI state.
+/// Stores physical samples on a research server.
 /// </summary>
 [RegisterComponent]
 public sealed partial class XenobiologyDatabaseComponent : Component

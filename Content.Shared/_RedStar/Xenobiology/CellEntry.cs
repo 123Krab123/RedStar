@@ -1,10 +1,17 @@
-using Robust.Shared.Serialization;
-
 namespace Content.Shared._RedStar.Xenobiology;
 
-[Serializable, NetSerializable]
-public readonly struct CellEntry(int id, Cell cell)
+[DataDefinition]
+public partial struct CellEntry
 {
-    public readonly int Id = id;
-    public readonly Cell Cell = cell;
+    [DataField]
+    public int Id;
+
+    [DataField]
+    public Cell Cell;
+
+    public CellEntry(int id, Cell cell)
+    {
+        Id = id;
+        Cell = cell;
+    }
 }

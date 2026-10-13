@@ -428,8 +428,8 @@
     reflects:
     - Energy
   # RS14-start
-  - type: CellTraitSource
-    traits: [ Reflection ]
+  - type: Genome
+    genomeId: Basilisk
   # RS14-end
   - type: ToolRefinable
     refineResult:

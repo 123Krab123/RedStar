@@ -277,8 +277,8 @@
     userPopup: action-popup-lay-egg-user
     othersPopup: action-popup-lay-egg-others
   # RS14-start
-  - type: CellTraitSource
-    traits: [ EggLayer ]
+  - type: Genome
+    genomeId: Fowl
   # RS14-end
   - type: SatiationProduction
     delay: 60
@@ -750,8 +750,8 @@
     userPopup: action-popup-lay-egg-user
     othersPopup: action-popup-lay-egg-others
   # RS14-start
-  - type: CellTraitSource
-    traits: [ EggLayer ]
+  - type: Genome
+    genomeId: Fowl
   # RS14-end
   - type: SatiationProduction
     delay: 60
@@ -954,8 +954,8 @@
     emptyMessage: udder-system-dry
     successMessage: udder-system-success
   # RS14-start
-  - type: CellTraitSource
-    traits: [ Lactation ]
+  - type: Genome
+    genomeId: Bovine
   # RS14-end
   - type: ToolRefinable
     refineResult:
@@ -1131,8 +1131,8 @@
     emptyMessage: udder-system-dry
     successMessage: udder-system-success
   # RS14-start
-  - type: CellTraitSource
-    traits: [ Lactation, Bleating ]
+  - type: Genome
+    genomeId: Caprine
   # RS14-end
   - type: Edible
     destroyOnEmpty: false
@@ -1279,8 +1279,8 @@
     emptyMessage: udder-system-dry
     successMessage: udder-system-success
   # RS14-start
-  - type: CellTraitSource
-    traits: [ Lactation, Bleating ]
+  - type: Genome
+    genomeId: Caprine
   # RS14-end
   - type: Shearable
     targetSolutionName: wool
@@ -2272,8 +2272,8 @@
     intensity: 0.5
     slope: 0.3
   # RS14-start
-  - type: CellTraitSource
-    traits: [ NightVision, Radiation ]
+  - type: Genome
+    genomeId: IrradiatedRodent
   # RS14-end
   - type: Bloodstream
     bloodReferenceSolution:
@@ -2525,8 +2525,8 @@
   - type: ParrotListener
   - type: ParrotMemory
   # RS14-start
-  - type: CellTraitSource
-    traits: [ ParrotSpeech ]
+  - type: Genome
+    genomeId: Parrot
   # RS14-end
   - type: Inventory
     templateId: parrot
@@ -2955,8 +2955,8 @@
       task: RuminantHostileCompound
   - type: MessyDrinker
   # RS14-start
-  - type: CellTraitSource
-    traits: [ MessyDrinker ]
+  - type: Genome
+    genomeId: Canid
   # RS14-end
   - type: Tag
     tags:
@@ -3027,8 +3027,8 @@
     price: 200
   - type: MessyDrinker
   # RS14-start
-  - type: CellTraitSource
-    traits: [ MessyDrinker ]
+  - type: Genome
+    genomeId: Canid
   # RS14-end
   # TODO: Fix the sprite offset
   #- type: CreamPied
@@ -3154,6 +3154,10 @@
   id: MobCat
   description: Feline pet, very funny.
   components:
+  # RS14-start
+  - type: Genome
+    genomeId: Feline
+  # RS14-end
   - type: Sprite
     drawdepth: Mobs
     sprite: Mobs/Pets/cat.rsi
@@ -3661,6 +3665,10 @@
   id: MobPig
   description: Oink.
   components:
+  # RS14-start
+  - type: Genome
+    genomeId: Porcine
+  # RS14-end
   - type: Sprite
     drawdepth: Mobs
     layers:
@@ -3807,8 +3815,8 @@
     popupText: diona-reform-attempt
     reformPrototype: MobDionaReformed
   # RS14-start
-  - type: CellTraitSource
-    traits: [ Reform ]
+  - type: Genome
+    genomeId: DionaNymph
   # RS14-end
   - type: TTS # Corvax-TTS
     #voice: Omu
@@ -3828,6 +3836,10 @@
   id: MobReindeerBuck
   description: You think it can pull a sleigh?
   components:
+  # RS14-start
+  - type: Genome
+    genomeId: Cervid
+  # RS14-end
   - type: Sprite
     drawdepth: Mobs
     layers:

@@ -10,19 +10,19 @@ public enum CellSequencerUiKey
 
 [Serializable, NetSerializable]
 public sealed class CellSequencerUiState(
-    Cell[] insideCell,
-    CellEntry[] remoteCells,
-    int material,
+    CellView[] insideCell,
+    CellEntryView[] remoteCells,
     bool hasContainer,
+    bool hasSpace,
     int dishRevision,
     NetEntity? dish)
     : BoundUserInterfaceState
 {
-    public readonly Cell[] InsideCells = insideCell;
-    public readonly CellEntry[] RemoteCells = remoteCells;
+    public readonly CellView[] InsideCells = insideCell;
+    public readonly CellEntryView[] RemoteCells = remoteCells;
     public bool Connected;
-    public readonly int Material = material;
     public readonly bool HasContainer = hasContainer;
+    public readonly bool HasSpace = hasSpace;
     public readonly int DishRevision = dishRevision;
     public readonly NetEntity? Dish = dish;
 }
@@ -45,7 +45,9 @@ public sealed class CellSequencerUiRemoveMessage(int? id, bool remote, int dishR
 }
 
 [Serializable, NetSerializable]
-public sealed class CellSequencerUiReplaceMessage(int? id) : BoundUserInterfaceMessage
+public sealed class CellSequencerUiWithdrawMessage(int? id, int dishRevision, NetEntity? dish) : BoundUserInterfaceMessage
 {
     public readonly int? Id = id;
+    public readonly int DishRevision = dishRevision;
+    public readonly NetEntity? Dish = dish;
 }
