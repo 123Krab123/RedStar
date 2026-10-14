@@ -1,19 +1,22 @@
-# Заголовок и списки
-cell-sequencer-menu-title = Анализатор клеток
-cell-sequencer-menu-inside-label = В чашке
-cell-sequencer-menu-remote-label = В базе данных
-cell-sequencer-menu-info-label = Сведения о клетке
-cell-sequencer-menu-no-selected-label = Клетка не выбрана
-
-# Свойства клетки
-cell-sequencer-menu-cell-stability-label = Стабильность: {$stability}%
-cell-sequencer-menu-cell-traits-label = Генетические маркеры:
-
-# Кнопки
-cell-sequencer-menu-add-button = Сохранить
-cell-sequencer-menu-remove-button = Удалить
-cell-sequencer-menu-withdraw-button = Извлечь
-
-# Сообщения
-cell-sequencer-no-connect = Нет соединения с исследовательским сервером!
-cell-sequencer-no-selected = Выберите клетку для операции!
+cell-sequencer-menu-title = Генетический секвенатор
+cell-sequencer-samples = ОБРАЗЦЫ
+cell-sequencer-map = ГЕНОМ
+cell-sequencer-compare = Сравнение
+cell-sequencer-assembly = РЕКОНСТРУКЦИЯ
+cell-sequencer-reset = Сброс
+cell-sequencer-submit = Расшифровать
+cell-sequencer-extract = Извлечь
+cell-sequencer-sample-stability = Стабильность: {$stability}%
+cell-sequencer-known-detail = {$name} · {$value}
+cell-sequencer-status-known = РАСШИФРОВАНО
+cell-sequencer-status-unknown = НЕИЗВЕСТНО
+cell-sequencer-retry = Калибровка: {$seconds} с
+cell-sequencer-present = Присутствует
+cell-sequencer-incorrect = Сборка последовательности не подтверждена.
+cell-sequencer-discovered = Расшифровано: {$gene}.
+cell-sequencer-different-gene = Совпадений нет
+cell-sequencer-same-gene-hidden = Совпадение · данные не расшифрованы
+cell-sequencer-same-value = Полное совпадение
+cell-sequencer-different-value = Различающиеся варианты
+cell-sequencer-reads = ФРАГМЕНТЫ
+cell-sequencer-board = ПОСЛЕДОВАТЕЛЬНОСТЬ

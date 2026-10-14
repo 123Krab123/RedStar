@@ -1,22 +1,18 @@
 # Заголовок и списки
 cellular-fusion-menu-title = Стабилизатор клеток
-cellular-fusion-menu-cell-a-label = Клетка A
-cellular-fusion-menu-cell-b-label = Клетка B
-cellular-fusion-menu-preview-label = Стабилизированный образец
-cellular-fusion-menu-cell-a-no-selected-label = Клетка A не выбрана
-cellular-fusion-menu-cell-b-no-selected-label = Клетка B не выбрана
+cellular-fusion-menu-samples-label = Образцы в чашке Петри
+cellular-fusion-menu-details-label = Характеристики образцов
+cellular-fusion-menu-no-dish-label = Вставьте чашку Петри.
+cellular-fusion-menu-empty-dish-label = Чашка Петри пуста.
+cellular-fusion-menu-no-selection-label = Выберите до двух образцов.
 
 # Свойства клетки
 cellular-fusion-menu-cell-stability-label = Стабильность: {$stability}%
-cellular-fusion-menu-cell-cost-label = Стоимость: {$cost} плазмы
 cellular-fusion-menu-cell-traits-label = Генетические маркеры:
 
 # Кнопки
 cellular-fusion-menu-splice-button = Стабилизировать
 
 # Сообщения
-cellular-fusion-no-dish = Чашка Петри не вставлена!
-cellular-fusion-dish-removed = Чашка Петри недоступна или заполнена. Плазма не потрачена.
 cellular-fusion-splice-success = Стабилизация завершена! Оба исходных образца израсходованы.
-cellular-fusion-splice-failure = Стабилизация не удалась. Оба образца и плазма израсходованы.
 cellular-fusion-incompatible = Нужны два отдельных образца с полностью одинаковым генетическим материалом.

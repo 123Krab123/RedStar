@@ -1,4 +1,4 @@
-using Content.Shared._RedStar.Xenobiology;
+using Content.Shared._RedStar.Genetics;
 using Content.Shared.EntityEffects;
 using Robust.Shared.Prototypes;
 
@@ -32,16 +32,16 @@ public sealed partial class GenomeExpressionSystem : EntitySystem
             return;
 
         GenomeExpressionComponent? host = null;
-        foreach (var rule in _prototypes.EnumeratePrototypes<CellTraitPrototype>())
+        foreach (var (id, _) in genome.GetGenes())
         {
-            if (!genome.TryGetGene(rule.Gene, out var state) ||
-                rule.Allele is not null && state?.Allele != rule.Allele)
+            if (!_prototypes.TryIndex(id, out var gene) || gene.Effects.Length == 0)
                 continue;
 
             host ??= EnsureComp<GenomeExpressionComponent>(uid);
-            if (!host.Applied.Add(rule.ID))
+            if (host.Applied.Contains(id))
                 continue;
-            _effects.ApplyEffects(uid, rule.Effects);
+            if (_effects.TryApplyEffects(uid, gene.Effects))
+                host.Applied.Add(id);
         }
     }
 }

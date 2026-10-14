@@ -1,21 +1,22 @@
-# Menu title
-cell-sequencer-menu-title = Cell sequencer
-
-# Menu labels
-cell-sequencer-menu-inside-label = Inside
-cell-sequencer-menu-remote-label = Remote
-cell-sequencer-menu-info-label = Cell details
-cell-sequencer-menu-no-selected-label = Cell not selected
-
-cell-sequencer-menu-cell-stability-label = Stability: {$stability}%
-
-cell-sequencer-menu-cell-traits-label = Genetic markers:
-
-# Menu buttons
-cell-sequencer-menu-add-button = Save
-cell-sequencer-menu-remove-button = Remove
-cell-sequencer-menu-withdraw-button = Withdraw
-
-# Popups
-cell-sequencer-no-connect = No connection with the server!
-cell-sequencer-no-selected = No sample selected for further operations!
+cell-sequencer-menu-title = Genetic sequencer
+cell-sequencer-samples = SAMPLES
+cell-sequencer-map = GENOME
+cell-sequencer-compare = Compare
+cell-sequencer-assembly = RECONSTRUCTION
+cell-sequencer-reset = Reset
+cell-sequencer-submit = Decode
+cell-sequencer-extract = Extract
+cell-sequencer-sample-stability = Stability: {$stability}%
+cell-sequencer-known-detail = {$name} · {$value}
+cell-sequencer-status-known = DECODED
+cell-sequencer-status-unknown = UNKNOWN
+cell-sequencer-retry = Calibrating: {$seconds}s
+cell-sequencer-present = Present
+cell-sequencer-incorrect = Sequence assembly could not be verified.
+cell-sequencer-discovered = Decoded: {$gene}.
+cell-sequencer-different-gene = No matching gene
+cell-sequencer-same-gene-hidden = Match · undecoded data
+cell-sequencer-same-value = Exact match
+cell-sequencer-different-value = Different variants
+cell-sequencer-reads = READS
+cell-sequencer-board = ASSEMBLY

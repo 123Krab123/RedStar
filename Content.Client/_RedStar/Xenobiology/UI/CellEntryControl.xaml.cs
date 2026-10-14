@@ -8,26 +8,30 @@ namespace Content.Client._RedStar.Xenobiology.UI;
 [GenerateTypedNameReferences]
 public sealed partial class CellEntryControl : Control
 {
-    public readonly CellView Cell;
-    public readonly bool Remote;
+    public readonly SampleView Sample;
     public readonly int Id;
     public event Action<CellEntryControl>? OnSelect;
 
-    public CellEntryControl(CellView cell, bool remote, int id)
+    public CellEntryControl(SampleView sample, int id)
     {
         RobustXamlLoader.Load(this);
-        Cell = cell;
-        Remote = remote;
+        Sample = sample;
         Id = id;
 
-        CellNameLabel.Text = cell.Name;
-        Color.ModulateSelfOverride = cell.Color;
+        CellNameLabel.Text = sample.Name;
+        Color.ModulateSelfOverride = sample.Color;
 
         Button.OnPressed += _ => OnSelect?.Invoke(this);
     }
 
-    public void SetState(bool value)
+    public void SetSelected(bool selected)
     {
-        Button.Disabled = !value;
+        Button.ToggleMode = true;
+        Button.Pressed = selected;
+    }
+
+    public void SetEnabled(bool enabled)
+    {
+        Button.Disabled = !enabled;
     }
 }

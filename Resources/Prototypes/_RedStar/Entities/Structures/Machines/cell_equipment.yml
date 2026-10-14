@@ -28,7 +28,6 @@
       - !type:DoActsBehavior
         acts: [ "Destruction" ]
   - type: ActivatableUIRequiresPower
-  - type: ResearchClient
   - type: ApcPowerReceiver
     powerLoad: 250
   - type: Appearance
@@ -62,7 +61,7 @@
   id: CellSequencer
   parent: BaseCellProcessingMachine
   name: cell sequencer
-  description: Moves cell samples between a Petri dish and R&D storage.
+  description: Deciphers genetic markers in samples from an inserted Petri dish.
   components:
   - type: Sprite
     sprite: _RedStar/Structures/Machines/Xenobiology/cell_sequencer.rsi
@@ -82,9 +81,23 @@
     interfaces:
       enum.CellSequencerUiKey.Key:
         type: CellSequencerBoundUserInterface
-      enum.ResearchClientUiKey.Key:
-        type: ResearchClientBoundUserInterface
   - type: CellSequencer
+  - type: ContainerContainer
+    containers:
+      dishSlot: !type:ContainerSlot
+      vialSlot: !type:ContainerSlot
+      machine_board: !type:Container
+      machine_parts: !type:Container
+  - type: ItemSlots
+    slots:
+      dishSlot:
+        whitelist:
+          tags:
+          - Dish
+      vialSlot:
+        whitelist:
+          components:
+          - GeneticVial
   - type: Machine
     board: CellSequencerCircuitboard
 
@@ -92,7 +105,7 @@
   id: CellularFusion
   parent: BaseCellProcessingMachine
   name: cell stabilizer
-  description: Improves the stability of identical stored genetic samples.
+  description: Improves the stability of identical samples in a Petri dish.
   components:
   - type: Sprite
     sprite: _RedStar/Structures/Machines/Xenobiology/cellular_fusion.rsi
@@ -112,15 +125,7 @@
     interfaces:
       enum.CellularFusionUiKey.Key:
         type: CellularFusionBoundUserInterface
-      enum.ResearchClientUiKey.Key:
-        type: ResearchClientBoundUserInterface
   - type: CellularFusion
-  - type: MaterialStorage
-    whitelist:
-      tags:
-      - Sheet
-    materialWhiteList:
-    - Plasma
   - type: Machine
     board: CellularFusionCircuitboard
 
@@ -139,7 +144,7 @@
     - state: base
       map: [ "base" ]
     - state: door-closed
-      map: [ "enum.MutagenicInjectorVisuals.DoorLayer" ]
+      map: [ "enum.StorageVisualLayers.Door" ]
     - state: unlit
       shader: unshaded
       map: [ "enum.PowerDeviceVisualLayers.Powered" ]
@@ -160,28 +165,29 @@
     containers:
     - machine_board
     - machine_parts
+    - entity_storage
   - type: ContainerContainer
     containers:
       machine_board: !type:Container
       machine_parts: !type:Container
-      dishSlot: !type:ContainerSlot
-      injector-bodyContainer: !type:ContainerSlot
+      vialSlot: !type:ContainerSlot
+      entity_storage: !type:Container
   - type: EmptyOnMachineDeconstruct
     containers:
-    - injector-bodyContainer
+    - entity_storage
   - type: ItemSlots
     slots:
-      dishSlot:
+      vialSlot:
         whitelist:
-          tags:
-          - Dish
+          components:
+          - GeneticVial
   - type: Appearance
   - type: GenericVisualizer
     visuals:
-      enum.MutagenicInjectorVisuals.DoorState:
-        enum.MutagenicInjectorVisuals.DoorLayer:
-          True: { visible: true }
-          False: { visible: false }
+      enum.StorageVisuals.Open:
+        enum.StorageVisualLayers.Door:
+          True: { visible: false }
+          False: { visible: true }
       enum.PowerDeviceVisuals.Powered:
         enum.PowerDeviceVisualLayers.Powered:
           True: { visible: true }
@@ -196,6 +202,12 @@
       params:
         loop: true
         maxDistance: 5
+  - type: ResistLocker
+  - type: EntityStorage
+    capacity: 1
+    whitelist:
+      components:
+      - MobState
   - type: GuideHelp
     guides:
     - Science

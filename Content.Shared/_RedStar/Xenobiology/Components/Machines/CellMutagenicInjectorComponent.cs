@@ -1,19 +1,16 @@
-using Robust.Shared.Containers;
 using Robust.Shared.GameStates;
 using Robust.Shared.Audio;
 
 namespace Content.Shared._RedStar.Xenobiology.Components.Machines;
 
 /// <summary>
-/// Injects cells from a Petri dish into a specimen.
+/// Injects genetic material from a vial into a specimen.
 /// </summary>
 [RegisterComponent, NetworkedComponent, AutoGenerateComponentPause]
 public sealed partial class CellMutagenicInjectorComponent : Component
 {
-    public const string BodyContainerId = "injector-bodyContainer";
-
     [DataField]
-    public string DishSlot = "dishSlot";
+    public string VialSlot = "vialSlot";
 
     [DataField]
     public TimeSpan InjectionDelay = TimeSpan.FromSeconds(5);
@@ -28,13 +25,10 @@ public sealed partial class CellMutagenicInjectorComponent : Component
     public EntityUid? InjectionSubject;
 
     [ViewVariables]
-    public EntityUid? InjectionDish;
+    public EntityUid? InjectionVial;
 
     [ViewVariables]
-    public int InjectionDishRevision;
+    public int InjectionVialRevision;
 
     public EntityUid? AudioStream;
-
-    [ViewVariables]
-    public ContainerSlot BodyContainer = default!;
 }

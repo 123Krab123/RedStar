@@ -1,6 +1,3 @@
-using Content.Shared.Materials;
-using Robust.Shared.Prototypes;
-
 namespace Content.Shared._RedStar.Xenobiology.Components.Machines;
 
 [RegisterComponent, AutoGenerateComponentPause]
@@ -8,15 +5,6 @@ public sealed partial class CellularFusionComponent : Component
 {
     [DataField]
     public string DishSlot = "dishSlot";
-
-    [DataField]
-    public ProtoId<MaterialPrototype> RequiredMaterial = "Plasma";
-
-    [DataField]
-    public float BaseFailureChance = 0.05f;
-
-    [DataField]
-    public float StabilityMultiplier = 0.5f;
 
     [DataField]
     public float SpliceDelay = 5f;
@@ -31,17 +19,20 @@ public sealed partial class CellularFusionComponent : Component
     public TimeSpan SpliceDuration;
 
     [ViewVariables]
-    public int? SpliceCellAId;
+    public BiologicalSample? SpliceSampleA;
 
     [ViewVariables]
-    public int? SpliceCellBId;
+    public BiologicalSample? SpliceSampleB;
 
     [ViewVariables]
     public EntityUid? SpliceDish;
 
     [ViewVariables]
-    public EntityUid? SpliceServer;
+    public int SpliceRevision;
 
     [ViewVariables]
-    public int SpliceCost;
+    public EntityUid? ObservedDish;
+
+    [ViewVariables]
+    public int ObservedRevision = -1;
 }

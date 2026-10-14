@@ -1,42 +1,48 @@
+using System.Linq;
 using Content.Server._RedStar.Genetics;
+using Content.Server.Storage.EntitySystems;
+using Content.Shared.Body.Components;
 using Content.Shared._RedStar.Genetics;
 using Content.Server.Power.EntitySystems;
-using Content.Shared._RedStar.Xenobiology.Components.Container;
 using Content.Shared._RedStar.Xenobiology.Components.Machines;
-using Content.Shared._RedStar.Xenobiology.Systems;
-using Content.Shared._RedStar.Xenobiology.Systems.Machines;
 using Content.Shared.Containers.ItemSlots;
-using Content.Shared.Interaction;
+using Content.Shared.Mobs.Components;
 using Content.Shared.Popups;
 using Content.Shared.Power;
+using Content.Shared.Storage.Components;
+using Content.Shared.Storage.EntitySystems;
+using Content.Shared.Verbs;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Containers;
-using Robust.Shared.Random;
-using Robust.Shared.Prototypes;
 using Robust.Shared.Timing;
 
 namespace Content.Server._RedStar.Xenobiology;
-public sealed partial class MutagenicInjectorSystem : SharedMutagenicInjectorSystem
+public sealed partial class MutagenicInjectorSystem : EntitySystem
 {
-    [Dependency] private SharedCellSystem _cell = default!;
+    [Dependency] private GeneticVialSystem _vials = default!;
     [Dependency] private ItemSlotsSystem _itemSlots = default!;
     [Dependency] private SharedPopupSystem _popup = default!;
     [Dependency] private SharedAudioSystem _audio = default!;
     [Dependency] private IGameTiming _timing = default!;
     [Dependency] private GenomeSystem _genomes = default!;
-    [Dependency] private IRobustRandom _random = default!;
+    [Dependency] private EntityStorageSystem _storage = default!;
 
-    protected override bool IsValidRecipient(EntityUid recipient) =>
-        base.IsValidRecipient(recipient) && HasComp<GenomeComponent>(recipient);
+    private bool IsValidRecipient(EntityUid recipient) =>
+        HasComp<MobStateComponent>(recipient) && HasComp<BloodstreamComponent>(recipient) &&
+        HasComp<GenomeComponent>(recipient);
 
     [SubscribeLocalEvent]
-    private void OnActivateInWorld(Entity<CellMutagenicInjectorComponent> ent, ref ActivateInWorldEvent args)
+    private void OnInsertAttempt(Entity<CellMutagenicInjectorComponent> ent,
+        ref EntityStorageInsertedIntoAttemptEvent args)
     {
-        if (args.Handled)
-            return;
+        if (!IsValidRecipient(args.ItemToInsert))
+            args.Cancelled = true;
+    }
 
-        TryStartInjection(ent);
-        args.Handled = true;
+    [SubscribeLocalEvent]
+    private void OnOpened(Entity<CellMutagenicInjectorComponent> ent, ref StorageAfterOpenEvent args)
+    {
+        CancelInjection(ent);
     }
 
     [SubscribeLocalEvent]
@@ -47,9 +53,24 @@ public sealed partial class MutagenicInjectorSystem : SharedMutagenicInjectorSys
     }
 
     [SubscribeLocalEvent]
+    private void OnGetAltVerbs(Entity<CellMutagenicInjectorComponent> ent, ref GetVerbsEvent<AlternativeVerb> args)
+    {
+        if (!args.CanAccess || !args.CanInteract || args.Using is not null ||
+            Comp<EntityStorageComponent>(ent).Open || ent.Comp.InjectionEndTime is not null)
+            return;
+
+        args.Verbs.Add(new AlternativeVerb
+        {
+            Text = Loc.GetString("mutagenic-injector-start"),
+            Act = () => TryStartInjection(ent),
+            Priority = 1
+        });
+    }
+
+    [SubscribeLocalEvent]
     private void OnContainerRemoved(Entity<CellMutagenicInjectorComponent> ent, ref EntRemovedFromContainerMessage args)
     {
-        if (args.Container.ID == ent.Comp.DishSlot || args.Container.ID == CellMutagenicInjectorComponent.BodyContainerId)
+        if (args.Container.ID == ent.Comp.VialSlot || args.Container.ID == SharedEntityStorageSystem.ContainerName)
             CancelInjection(ent);
     }
 
@@ -61,62 +82,60 @@ public sealed partial class MutagenicInjectorSystem : SharedMutagenicInjectorSys
 
     private void TryStartInjection(Entity<CellMutagenicInjectorComponent> ent)
     {
-        if (ent.Comp.InjectionEndTime is not null || !this.IsPowered(ent.Owner, EntityManager) ||
-            !ValidateInjection(ent))
+        if (!TryGetReadyInjection(ent, out var subject, out var vial))
             return;
 
-        var dish = _itemSlots.GetItemOrNull(ent.Owner, ent.Comp.DishSlot)!.Value;
-        var dishContainer = Comp<CellContainerComponent>(dish);
-
-        ent.Comp.InjectionSubject = ent.Comp.BodyContainer.ContainedEntity;
-        ent.Comp.InjectionDish = dish;
-        ent.Comp.InjectionDishRevision = dishContainer.Revision;
+        ent.Comp.InjectionSubject = subject;
+        ent.Comp.InjectionVial = vial.Owner;
+        ent.Comp.InjectionVialRevision = vial.Comp.Revision;
         ent.Comp.InjectionEndTime = _timing.CurTime + ent.Comp.InjectionDelay;
         ent.Comp.AudioStream = _audio.PlayPvs(ent.Comp.ProcessSound, ent.Owner)?.Entity;
     }
 
-    private bool ValidateInjection(Entity<CellMutagenicInjectorComponent> ent)
+    private bool TryGetReadyInjection(Entity<CellMutagenicInjectorComponent> ent, out EntityUid subject,
+        out Entity<GeneticVialComponent> vial)
     {
-        var dish = _itemSlots.GetItemOrNull(ent.Owner, ent.Comp.DishSlot);
-        if (dish is null)
-        {
-            _popup.PopupEntity(Loc.GetString("mutagenic-injector-no-dish"), ent, PopupType.MediumCaution);
+        subject = default;
+        vial = default;
+        if (ent.Comp.InjectionEndTime is not null || !this.IsPowered(ent.Owner, EntityManager))
             return false;
-        }
 
-        if (!TryComp<CellContainerComponent>(dish.Value, out var dishContainer) || dishContainer.Empty)
-        {
-            _popup.PopupEntity(Loc.GetString("mutagenic-injector-no-cells"), ent, PopupType.MediumCaution);
+        var storage = Comp<EntityStorageComponent>(ent);
+        var vialUid = _itemSlots.GetItemOrNull(ent.Owner, ent.Comp.VialSlot);
+        if (storage.Open || storage.Contents.ContainedEntities.Count != 1 ||
+            !IsValidRecipient(storage.Contents.ContainedEntities.First()) ||
+            vialUid is not { } inserted ||
+            !TryComp<GeneticVialComponent>(inserted, out var vialComponent) ||
+            vialComponent.Genes.Count == 0 ||
+            _genomes.ValidateGenes(vialComponent.Genes) != GenomeOperationResult.Success)
             return false;
-        }
 
-        if (!dishContainer.Cells.Exists(cell => cell.GeneCount > 0))
-        {
-            _popup.PopupEntity(Loc.GetString("mutagenic-injector-no-traits"), ent, PopupType.MediumCaution);
-            return false;
-        }
-
-        if (ent.Comp.BodyContainer.ContainedEntity is { } recipient && IsValidRecipient(recipient))
-            return true;
-
-        _popup.PopupEntity(Loc.GetString("mutagenic-injector-no-target"), ent, PopupType.MediumCaution);
-        return false;
+        subject = storage.Contents.ContainedEntities.First();
+        vial = (inserted, vialComponent);
+        return true;
     }
 
     public override void Update(float frameTime)
     {
         base.Update(frameTime);
 
-        var query = EntityQueryEnumerator<CellMutagenicInjectorComponent, MetaDataComponent>();
-        while (query.MoveNext(out var uid, out var component, out var metadata))
+        var query = EntityQueryEnumerator<CellMutagenicInjectorComponent, EntityStorageComponent, MetaDataComponent>();
+        while (query.MoveNext(out var uid, out var component, out var storage, out var metadata))
         {
-            if (metadata.EntityPaused || component.InjectionEndTime is not { } endTime)
+            if (metadata.EntityPaused)
                 continue;
 
             var machine = new Entity<CellMutagenicInjectorComponent>(uid, component);
+            if (component.InjectionEndTime is not { } endTime)
+                continue;
+
             if (!this.IsPowered(uid, EntityManager) ||
-                component.InjectionSubject != component.BodyContainer.ContainedEntity ||
-                component.InjectionDish != _itemSlots.GetItemOrNull(uid, component.DishSlot))
+                storage.Open || storage.Contents.ContainedEntities.Count != 1 ||
+                component.InjectionSubject != storage.Contents.ContainedEntities.First() ||
+                component.InjectionVial != _itemSlots.GetItemOrNull(uid, component.VialSlot) ||
+                component.InjectionVial is not { } vialUid ||
+                !TryComp<GeneticVialComponent>(vialUid, out var vial) ||
+                vial.Revision != component.InjectionVialRevision)
             {
                 CancelInjection(machine);
                 continue;
@@ -130,76 +149,31 @@ public sealed partial class MutagenicInjectorSystem : SharedMutagenicInjectorSys
     private void FinishInjection(Entity<CellMutagenicInjectorComponent> ent)
     {
         var subject = ent.Comp.InjectionSubject;
-        var dish = ent.Comp.InjectionDish;
-        if (subject is not { } mob || dish is not { } dishUid ||
-            !TryComp<CellContainerComponent>(dishUid, out var dishContainer) ||
-            dishContainer.Revision != ent.Comp.InjectionDishRevision || dishContainer.Empty ||
-            !IsValidRecipient(mob) || !_genomes.TryGetSnapshot(mob, out var recipient) || recipient is null)
+        var vial = ent.Comp.InjectionVial;
+        if (subject is not { } mob || vial is not { } vialUid ||
+            !TryComp<GeneticVialComponent>(vialUid, out var vialComponent) ||
+            vialComponent.Revision != ent.Comp.InjectionVialRevision || vialComponent.Genes.Count == 0 ||
+            !IsValidRecipient(mob) || _genomes.ApplyGenes(mob, _vials.GetGenes((vialUid, vialComponent)), out var changed) !=
+            GenomeOperationResult.Success)
         {
             CancelInjection(ent);
             return;
         }
 
-        var samples = new List<(GenomeSnapshot Genome, float Stability)>();
-        foreach (var sample in dishContainer.Cells)
-        {
-            if (!sample.HasGenome)
-                continue;
-            if (sample.GetGenome() is not { } genome ||
-                _genomes.ValidateSnapshot(genome) != GenomeOperationResult.Success)
-            {
-                CancelInjection(ent);
-                return;
-            }
-            samples.Add((genome, sample.Stability));
-        }
-
-        if (samples.Count == 0)
-        {
-            CancelInjection(ent);
-            return;
-        }
-
-        var originalGenes = recipient.GetGenes();
-        var genes = new Dictionary<ProtoId<GenePrototype>, GeneState>(originalGenes);
-        foreach (var (genome, stability) in samples)
-        {
-            foreach (var (id, state) in genome.GetGenes())
-            {
-                if (!_random.Prob(Math.Clamp(stability, 0f, 1f)))
-                    continue;
-                genes[id] = state;
-            }
-        }
-
-        var changed = 0;
-        foreach (var (id, state) in genes)
-        {
-            if (!originalGenes.TryGetValue(id, out var original) ||
-                original.Allele != state.Allele || original.Number != state.Number)
-                changed++;
-        }
-
-        if (_genomes.ReplaceGenome(mob, new GenomeSnapshot(recipient.GenomeId, genes)) != GenomeOperationResult.Success)
-        {
-            CancelInjection(ent);
-            return;
-        }
-
-        _cell.ClearCells((dishUid, dishContainer));
-        EjectBody(ent);
+        _vials.Clear((vialUid, vialComponent));
+        _storage.OpenStorage(ent.Owner);
         _popup.PopupEntity(Loc.GetString("mutagenic-injector-success", ("genes", changed)), ent, PopupType.Medium);
     }
 
-    protected override void CancelInjection(Entity<CellMutagenicInjectorComponent> ent)
+    private void CancelInjection(Entity<CellMutagenicInjectorComponent> ent)
     {
         if (ent.Comp.InjectionEndTime is null)
             return;
 
         ent.Comp.InjectionEndTime = null;
         ent.Comp.InjectionSubject = null;
-        ent.Comp.InjectionDish = null;
-        ent.Comp.InjectionDishRevision = 0;
+        ent.Comp.InjectionVial = null;
+        ent.Comp.InjectionVialRevision = 0;
         ent.Comp.AudioStream = _audio.Stop(ent.Comp.AudioStream);
     }
 }
