@@ -14,11 +14,6 @@
   result: MutagenicCellInjectorCircuitboard
 
 - type: latheRecipe
-  parent: [ BaseCircuitboardRecipe, BaseResearchMachineRecipeCategory ]
-  id: GrowingVatCircuitboard
-  result: GrowingVatCircuitboard
-
-- type: latheRecipe
   parent: BaseToolRecipe
   id: BiopsyTool
   result: BiopsyTool

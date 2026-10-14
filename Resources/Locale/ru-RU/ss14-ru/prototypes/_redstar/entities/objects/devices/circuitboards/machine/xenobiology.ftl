@@ -7,6 +7,3 @@ ent-CellularFusionCircuitboard = плата установки клеточно�
 ent-MutagenicCellInjectorCircuitboard = плата мутагенного инжектора
     .desc = { ent-BaseMachineCircuitboard.desc }
     .suffix = { ent-BaseMachineCircuitboard.suffix }
-ent-GrowingVatCircuitboard = плата чана культивирования
-    .desc = { ent-BaseMachineCircuitboard.desc }
-    .suffix = { ent-BaseMachineCircuitboard.suffix }

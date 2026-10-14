@@ -282,13 +282,9 @@ public sealed partial class GenomeSystem : EntitySystem
 
     private void Store(Entity<GenomeComponent> ent, Dictionary<ProtoId<GenePrototype>, GeneState> genes)
     {
-        var initialized = ent.Comp.GenomeGenerated;
         ent.Comp.Genes = genes;
         ent.Comp.GenomeGenerated = true;
-        if (initialized)
-            RaiseLocalEvent(ent.Owner, new GenomeChangedEvent());
-        else
-            RaiseLocalEvent(ent.Owner, new GenomeReadyEvent());
+        RaiseLocalEvent(ent.Owner, new GenomeChangedEvent());
     }
 
     /// <summary>
