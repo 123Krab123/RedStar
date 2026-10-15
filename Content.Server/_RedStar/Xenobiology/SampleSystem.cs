@@ -16,7 +16,6 @@ using Content.Shared._RedStar.Xenobiology.Components.Container;
 using Content.Shared._RedStar.Genetics;
 using Content.Shared._RedStar.Xenobiology.Components.Tools;
 using Content.Shared._RedStar.Xenobiology.Events;
-using Content.Shared._RedStar.Xenobiology.Systems;
 using Content.Shared._RedStar.Xenobiology.Visuals;
 using Robust.Server.GameObjects;
 using Robust.Shared.Prototypes;
@@ -27,7 +26,7 @@ namespace Content.Server._RedStar.Xenobiology;
 /// <summary>
 /// Creates laboratory samples from current genomes and handles biopsy and transfer.
 /// </summary>
-public sealed partial class SampleSystem : SharedSampleSystem
+public sealed partial class SampleSystem : EntitySystem
 {
     private enum SampleCollectorDirection
     {
@@ -48,14 +47,19 @@ public sealed partial class SampleSystem : SharedSampleSystem
     [Dependency] private GenomeSystem _genomes = default!;
 
     [SubscribeLocalEvent]
-    private void OnSampleGenerationInit(Entity<SampleGenerationComponent> ent, ref ComponentInit args)
+    private void OnSampleGenerationInit(Entity<SampleGenerationComponent> ent, ref MapInitEvent args)
     {
-        if (!TryComp<SampleContainerComponent>(ent, out var container))
+        if (ent.Comp.Generated || !TryComp<SampleContainerComponent>(ent, out var container))
+            return;
+
+        ent.Comp.Generated = true;
+        // Preserve saved samples from before the generation flag was introduced.
+        if (!container.Empty)
             return;
 
         foreach (var entry in ent.Comp.Samples)
         {
-            if (_genomes.Generate(entry.Genome, out var genome) != GenomeOperationResult.Success || genome is null)
+            if (!_genomes.TryGenerate(entry.Genome, out var genome) || genome is null)
                 continue;
 
             AddSample((ent, container), CreateSample(genome, entry.Stability));
@@ -74,9 +78,6 @@ public sealed partial class SampleSystem : SharedSampleSystem
         UpdateCollectorAppearance(ent);
     }
 
-    /// <summary>
-    /// Starts living biopsies and handles transfers between sample containers.
-    /// </summary>
     [SubscribeLocalEvent]
     private void OnCollectorInteract(Entity<SampleCollectorComponent> ent, ref BeforeRangedInteractEvent args)
     {
@@ -85,7 +86,7 @@ public sealed partial class SampleSystem : SharedSampleSystem
 
         TryComp<SampleContainerComponent>(args.Target, out var containerComponent);
         TryComp<SampleContainerComponent>(ent, out var collectorContainer);
-        var biological = IsSampleSource(args.Target.Value);
+        var biological = HasComp<GenomeComponent>(args.Target.Value);
         var direction = biological ||
             collectorContainer is { Empty: true } &&
             containerComponent is { Empty: false, AllowCollection: true }
@@ -103,6 +104,7 @@ public sealed partial class SampleSystem : SharedSampleSystem
 
         var doAfterArgs = new DoAfterArgs(EntityManager, args.User, ent.Comp.Delay, new SampleCollectorDoAfter(), ent, target: args.Target, used: ent)
         {
+            NeedHand = true,
             BreakOnDamage = true,
             BreakOnMove = true,
             MovementThreshold = 0.5f,
@@ -112,9 +114,6 @@ public sealed partial class SampleSystem : SharedSampleSystem
         args.Handled = _doAfter.TryStartDoAfter(doAfterArgs);
     }
 
-    /// <summary>
-    /// Completes a living biopsy after its delay.
-    /// </summary>
     [SubscribeLocalEvent]
     private void OnCollectorCollectDoAfter(Entity<SampleCollectorComponent> ent, ref SampleCollectorDoAfter args)
     {
@@ -133,7 +132,7 @@ public sealed partial class SampleSystem : SharedSampleSystem
         switch (direction)
         {
             case SampleCollectorDirection.Collection:
-                if (IsSampleSource(target))
+                if (HasComp<GenomeComponent>(target))
                 {
                     var damage = GetCellularDamage(target);
                     if (!_genomes.TryGetSnapshot(target, out var genome) || genome is null)
@@ -143,7 +142,7 @@ public sealed partial class SampleSystem : SharedSampleSystem
                         return false;
 
                     if (ent.Comp.Damage is not null)
-                        _damageable.TryChangeDamage(target, ent.Comp.Damage);
+                        _damageable.TryChangeDamage(target, ent.Comp.Damage, origin: user);
                 }
                 else if (TryComp<SampleContainerComponent>(target, out var targetComp))
                 {
@@ -169,14 +168,6 @@ public sealed partial class SampleSystem : SharedSampleSystem
         return true;
     }
 
-    /// <summary>
-    /// Identifies an organism targeted by a biopsy attempt.
-    /// </summary>
-    private bool IsSampleSource(EntityUid source)
-    {
-        return HasComp<GenomeComponent>(source);
-    }
-
     private float GetCellularDamage(EntityUid source)
     {
         if (!TryComp<DamageableComponent>(source, out var damageable) ||
@@ -186,9 +177,6 @@ public sealed partial class SampleSystem : SharedSampleSystem
         return (float) damage;
     }
 
-    /// <summary>
-    /// Creates a fresh laboratory sample from the organism's current genome.
-    /// </summary>
     private BiologicalSample GenerateBiopsySample(GenomeSnapshot genome, float cellularDamage)
     {
         var geneCount = genome.GeneCount;
@@ -197,9 +185,6 @@ public sealed partial class SampleSystem : SharedSampleSystem
         return CreateSample(genome, stability);
     }
 
-    /// <summary>
-    /// Derives a sample's initial appearance from its genes without later recalculation.
-    /// </summary>
     private BiologicalSample CreateSample(GenomeSnapshot genome, float stability)
     {
         var hash = GetAppearanceHash(genome);
@@ -217,11 +202,9 @@ public sealed partial class SampleSystem : SharedSampleSystem
     private static ulong GetAppearanceHash(GenomeSnapshot genome)
     {
         var canonical = new StringBuilder();
-        foreach (var (id, state) in genome.GetGenes().OrderBy(entry => entry.Key.ToString(), StringComparer.Ordinal))
+        foreach (var id in genome.Genes.OrderBy(id => id.Id, StringComparer.Ordinal))
         {
             AppendField(canonical, id.ToString());
-            AppendField(canonical, state.Allele);
-            AppendField(canonical, state.Number?.ToString(CultureInfo.InvariantCulture));
         }
 
         const ulong offset = 14695981039346656037;
@@ -243,9 +226,6 @@ public sealed partial class SampleSystem : SharedSampleSystem
             builder.Append(value.Length.ToString(CultureInfo.InvariantCulture)).Append(':').Append(value);
     }
 
-    /// <summary>
-    /// Updates the collector sprite state based on whether its cell container is empty.
-    /// </summary>
     private void UpdateCollectorAppearance(Entity<SampleCollectorComponent, SampleContainerComponent?> ent)
     {
         if (!Resolve(ent, ref ent.Comp2))
@@ -254,14 +234,10 @@ public sealed partial class SampleSystem : SharedSampleSystem
         _appearance.SetData(ent, CellCollectorVisuals.State, ent.Comp2.Empty);
     }
 
-    /// <summary>
-    /// Validates collection or transfer and optionally shows failure popups.
-    /// </summary>
     private bool CollectorInteractValidate(Entity<SampleCollectorComponent, SampleContainerComponent?> ent,
         Entity<SampleContainerComponent?> target,
         SampleCollectorDirection direction,
-        EntityUid user,
-        bool popup = true)
+        EntityUid user)
     {
         if (ent.Owner == target.Owner)
             return false;
@@ -276,34 +252,24 @@ public sealed partial class SampleSystem : SharedSampleSystem
             case SampleCollectorDirection.Collection:
                 if (ent.Comp2.Samples.Count >= ent.Comp2.MaxSamples)
                 {
-                    if (!popup)
-                        return false;
-
                     _popup.PopupEntity(Loc.GetString("cell-collector-full"), ent, user, PopupType.SmallCaution);
                     return false;
                 }
 
-                var biological = IsSampleSource(target.Owner);
-                if (biological && !_genomes.TryGetSnapshot(target.Owner, out _))
+                var biological = HasComp<GenomeComponent>(target.Owner);
+                switch (biological)
                 {
-                    if (popup)
+                    case true when !_genomes.TryGetSnapshot(target.Owner, out _):
                         _popup.PopupEntity(Loc.GetString("cell-collector-target-cant-collected"), ent, user, PopupType.SmallCaution);
-                    return false;
-                }
-                if (biological && GetCellularDamage(target.Owner) >= 120f)
-                {
-                    if (popup)
-                        _popup.PopupEntity(Loc.GetString("cell-collector-sample-damaged"), ent, user, PopupType.SmallCaution);
-                    return false;
-                }
-                if (!biological && target.Comp is not { AllowCollection: true, Empty: false })
-                {
-                    if (!popup)
                         return false;
-
-                    _popup.PopupEntity(Loc.GetString("cell-collector-target-cant-collected"), ent, user, PopupType.SmallCaution);
-                    return false;
+                    case true when GetCellularDamage(target.Owner) >= 120f:
+                        _popup.PopupEntity(Loc.GetString("cell-collector-sample-damaged"), ent, user, PopupType.SmallCaution);
+                        return false;
+                    case false when target.Comp is not { AllowCollection: true, Empty: false }:
+                        _popup.PopupEntity(Loc.GetString("cell-collector-target-cant-collected"), ent, user, PopupType.SmallCaution);
+                        return false;
                 }
+
                 break;
 
             case SampleCollectorDirection.Transfer:
@@ -316,9 +282,6 @@ public sealed partial class SampleSystem : SharedSampleSystem
 
                 if (ent.Comp2.Empty)
                 {
-                    if (!popup)
-                        return false;
-
                     _popup.PopupEntity(Loc.GetString("cell-collector-empty"), ent, user, PopupType.SmallCaution);
                     return false;
                 }

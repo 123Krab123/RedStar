@@ -1,11 +1,9 @@
-using System.Linq;
-using Content.Server._RedStar.Genetics;
 using Content.Server.Power.EntitySystems;
 using Content.Shared._RedStar.Genetics;
 using Content.Shared._RedStar.Xenobiology;
 using Content.Shared._RedStar.Xenobiology.Components.Container;
 using Content.Shared._RedStar.Xenobiology.Components.Machines;
-using Content.Shared._RedStar.Xenobiology.Systems;
+using Content.Shared._RedStar.Xenobiology.Events;
 using Content.Shared._RedStar.Xenobiology.UI;
 using Content.Shared.Containers.ItemSlots;
 using Content.Shared.Destructible;
@@ -22,8 +20,7 @@ public sealed partial class CellularFusionSystem : EntitySystem
     [Dependency] private SharedPopupSystem _popup = default!;
     [Dependency] private SharedUserInterfaceSystem _userInterface = default!;
     [Dependency] private ItemSlotsSystem _itemSlots = default!;
-    [Dependency] private SharedSampleSystem _samples = default!;
-    [Dependency] private GenomeSystem _genomes = default!;
+    [Dependency] private SampleSystem _samples = default!;
     [Dependency] private IGameTiming _timing = default!;
 
     [SubscribeLocalEvent]
@@ -36,11 +33,11 @@ public sealed partial class CellularFusionSystem : EntitySystem
     [SubscribeLocalEvent]
     private void OnDishRemoved(Entity<CellularFusionComponent> ent, ref EntRemovedFromContainerMessage args)
     {
-        if (args.Container.ID == ent.Comp.DishSlot)
-        {
-            CancelSplice(ent);
-            UpdateUI(ent);
-        }
+        if (args.Container.ID != ent.Comp.DishSlot)
+            return;
+
+        ResetSplice(ent.Comp);
+        UpdateUI(ent);
     }
 
     [SubscribeLocalEvent]
@@ -60,17 +57,26 @@ public sealed partial class CellularFusionSystem : EntitySystem
     private void OnAfterOpen(Entity<CellularFusionComponent> ent, ref AfterActivatableUIOpenEvent args) => UpdateUI(ent);
 
     [SubscribeLocalEvent]
+    private void OnSampleChanged(Entity<CellularFusionComponent> ent, ref ContainedSamplesChangedEvent args)
+    {
+        if (!TryGetDish(ent, out var dish) || dish.Owner != args.SampleContainer)
+            return;
+        ResetSplice(ent.Comp);
+        UpdateUI(ent);
+    }
+
+    [SubscribeLocalEvent]
     private void OnSpliceMessage(Entity<CellularFusionComponent> ent, ref CellularFusionUiSpliceMessage args)
     {
         if (ent.Comp.SpliceInProgress || !this.IsPowered(ent.Owner, EntityManager) ||
-            !TryGetDish(ent, out var dish) || args.Dish != GetNetEntity(dish.Owner) ||
-            args.DishRevision != dish.Comp.Revision || args.SampleAIndex == args.SampleBIndex ||
-            args.SampleAIndex < 0 || args.SampleBIndex < 0 ||
-            args.SampleAIndex >= dish.Comp.Samples.Count || args.SampleBIndex >= dish.Comp.Samples.Count)
+            !TryGetDish(ent, out var dish) || args.SampleAId == args.SampleBId)
             return;
-
-        var first = dish.Comp.Samples[args.SampleAIndex];
-        var second = dish.Comp.Samples[args.SampleBIndex];
+        var firstId = args.SampleAId;
+        var secondId = args.SampleBId;
+        var first = dish.Comp.Samples.Find(sample => sample.Id == firstId);
+        var second = dish.Comp.Samples.Find(sample => sample.Id == secondId);
+        if (first is null || second is null)
+            return;
         if (ReferenceEquals(first, second) || !CanStabilize(first, second, out _))
         {
             _popup.PopupEntity(Loc.GetString("cellular-fusion-incompatible"), ent, PopupType.MediumCaution);
@@ -80,9 +86,7 @@ public sealed partial class CellularFusionSystem : EntitySystem
         ent.Comp.SpliceSampleA = first;
         ent.Comp.SpliceSampleB = second;
         ent.Comp.SpliceDish = dish.Owner;
-        ent.Comp.SpliceRevision = dish.Comp.Revision;
-        ent.Comp.SpliceDuration = TimeSpan.FromSeconds(ent.Comp.SpliceDelay);
-        ent.Comp.SpliceEndTime = _timing.CurTime + ent.Comp.SpliceDuration;
+        ent.Comp.SpliceEndTime = _timing.CurTime + ent.Comp.SpliceDelay;
         UpdateUI(ent);
     }
 
@@ -95,29 +99,17 @@ public sealed partial class CellularFusionSystem : EntitySystem
             if (metadata.EntityPaused)
                 continue;
 
-            var machine = new Entity<CellularFusionComponent>(uid, component);
-            var hasDish = TryGetDish(machine, out var dish);
-            var dishUid = hasDish ? dish.Owner : (EntityUid?) null;
-            var revision = hasDish ? dish.Comp.Revision : -1;
-            if (component.ObservedDish != dishUid || component.ObservedRevision != revision)
-            {
-                component.ObservedDish = dishUid;
-                component.ObservedRevision = revision;
-                UpdateUI(machine);
-            }
-
-            if (component.SpliceEndTime is not { } endTime)
+            if (component.SpliceEndTime is not { } endTime || _timing.CurTime < endTime)
                 continue;
-
-            if (!this.IsPowered(uid, EntityManager) || !hasDish ||
-                component.SpliceDish != dish.Owner || component.SpliceRevision != revision)
+            var machine = new Entity<CellularFusionComponent>(uid, component);
+            if (!this.IsPowered(uid, EntityManager) || !TryGetDish(machine, out var dish) ||
+                component.SpliceDish != dish.Owner)
             {
                 CancelSplice(machine);
                 continue;
             }
 
-            if (_timing.CurTime >= endTime)
-                FinishSplice(machine, dish);
+            FinishSplice(machine, dish);
         }
     }
 
@@ -133,29 +125,27 @@ public sealed partial class CellularFusionSystem : EntitySystem
             return;
         }
 
-        var result = new BiologicalSample(SharedSampleSystem.GetStabilizedColor(first, second),
-            first.Name,
-            SharedSampleSystem.GetStabilizedStability(first, second), genome);
+        var max = Math.Max(first.Stability, second.Stability);
+        var min = Math.Min(first.Stability, second.Stability);
+        var stability = Math.Min(1f, max + (1f - max) * (0.08f + 0.04f * min));
+        var result = new BiologicalSample(Color.InterpolateBetween(first.Color, second.Color, 0.5f),
+            first.Name, stability, genome);
         ResetSplice(ent.Comp);
         if (!_samples.ReplaceSamples((dish.Owner, (SampleContainerComponent?) dish.Comp), first, second, result))
         {
             UpdateUI(ent);
             return;
         }
-        ent.Comp.ObservedRevision = dish.Comp.Revision;
         _popup.PopupEntity(Loc.GetString("cellular-fusion-splice-success"), ent, PopupType.Medium);
-        UpdateUI(ent);
     }
 
     private bool CanStabilize(BiologicalSample first, BiologicalSample second, out GenomeSnapshot? genome)
     {
         genome = null;
-        if (!float.IsFinite(first.Stability) || !float.IsFinite(second.Stability) ||
-            first.Stability is < 0f or > 1f || second.Stability is < 0f or > 1f ||
+        if (!first.HasValidStability || !second.HasValidStability ||
             Math.Max(first.Stability, second.Stability) >= 1f ||
             first.GetGenome() is not { } firstGenome || second.GetGenome() is not { } secondGenome ||
-            !firstGenome.SameContents(secondGenome) ||
-            _genomes.ValidateSnapshot(firstGenome) != GenomeOperationResult.Success)
+            !firstGenome.SameContents(secondGenome))
             return false;
 
         genome = firstGenome;
@@ -184,11 +174,9 @@ public sealed partial class CellularFusionSystem : EntitySystem
     private static void ResetSplice(CellularFusionComponent component)
     {
         component.SpliceEndTime = null;
-        component.SpliceDuration = TimeSpan.Zero;
         component.SpliceSampleA = null;
         component.SpliceSampleB = null;
         component.SpliceDish = null;
-        component.SpliceRevision = 0;
     }
 
     private void UpdateUI(Entity<CellularFusionComponent> ent)
@@ -200,12 +188,31 @@ public sealed partial class CellularFusionSystem : EntitySystem
         var remaining = ent.Comp.SpliceEndTime is { } endTime
             ? Math.Max(0, (endTime - _timing.CurTime).TotalSeconds)
             : 0;
+        var samples = new List<SampleView>();
+        var genomes = new List<GenomeSnapshot>();
+        if (hasDish)
+        {
+            foreach (var sample in dish.Comp.Samples)
+            {
+                int? group = null;
+                if (sample.GetGenome() is { } genome)
+                {
+                    var index = genomes.FindIndex(existing => existing.SameContents(genome));
+                    if (index < 0)
+                    {
+                        index = genomes.Count;
+                        genomes.Add(genome);
+                    }
+                    group = index;
+                }
+                samples.Add(new SampleView(sample, group));
+            }
+        }
         _userInterface.SetUiState(ent.Owner, CellularFusionUiKey.Key, new CellularFusionUiState(
-            hasDish ? dish.Comp.Samples.Select(cell => new SampleView(cell)).ToArray() : [],
-            hasDish ? dish.Comp.Revision : -1,
+            samples.ToArray(),
             hasDish ? GetNetEntity(dish.Owner) : null,
             ent.Comp.SpliceInProgress,
-            ent.Comp.SpliceDuration.TotalSeconds,
+            ent.Comp.SpliceDelay.TotalSeconds,
             remaining));
     }
 }

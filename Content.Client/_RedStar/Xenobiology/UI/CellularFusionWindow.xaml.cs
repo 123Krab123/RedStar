@@ -12,12 +12,11 @@ public sealed partial class CellularFusionWindow : FancyWindow
 {
     [Dependency] private IGameTiming _timing = default!;
 
-    public event Action<int, int, int, NetEntity?>? OnSplice;
+    public event Action<int, int>? OnSplice;
 
     private readonly List<CellEntryControl> _selected = [];
     private IReadOnlyList<SampleView> _samples = [];
     private NetEntity? _dish;
-    private int _dishRevision = -1;
     private bool _spliceInProgress;
     private TimeSpan _spliceStartTime;
     private double _spliceDuration;
@@ -31,16 +30,15 @@ public sealed partial class CellularFusionWindow : FancyWindow
         SpliceButton.OnPressed += _ =>
         {
             if (_selected.Count == 2 && !_spliceInProgress)
-                OnSplice?.Invoke(_selected[0].Id, _selected[1].Id, _dishRevision, _dish);
+                OnSplice?.Invoke(_selected[0].Id, _selected[1].Id);
         };
     }
 
     public void UpdateState(CellularFusionUiState state)
     {
-        var contentsChanged = _dish != state.Dish || _dishRevision != state.DishRevision ||
+        var contentsChanged = _dish != state.Dish ||
             !SameSamples(_samples, state.Samples);
         _dish = state.Dish;
-        _dishRevision = state.DishRevision;
 
         if (contentsChanged)
             RebuildEntries(state.Samples);
@@ -70,9 +68,9 @@ public sealed partial class CellularFusionWindow : FancyWindow
         _selected.Clear();
         _samples = cells.ToArray();
         CellContainer.RemoveAllChildren();
-        for (var index = 0; index < cells.Count; index++)
+        foreach (var t in cells)
         {
-            var entry = new CellEntryControl(cells[index], index);
+            var entry = new CellEntryControl(t, t.Id);
             entry.OnSelect += SelectEntry;
             CellContainer.AddChild(entry);
         }
@@ -124,7 +122,13 @@ public sealed partial class CellularFusionWindow : FancyWindow
         if (count == 2)
             CellInfoB.SetSample(_selected[1].Sample);
 
-        SpliceButton.Disabled = _spliceInProgress || count != 2 ||
+        var incompatible = count == 2 &&
+            _selected[0].Sample.CompatibilityGroup != _selected[1].Sample.CompatibilityGroup;
+        IncompatibleLabel.Visible = incompatible;
+        if (incompatible)
+            IncompatibleLabel.SetMessage(Loc.GetString("cellular-fusion-incompatible"));
+
+        SpliceButton.Disabled = _spliceInProgress || count != 2 || incompatible ||
             !_selected[0].Sample.HasGenome || !_selected[1].Sample.HasGenome ||
             Math.Max(_selected[0].Sample.Stability, _selected[1].Sample.Stability) >= 1f;
     }

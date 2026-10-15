@@ -7,16 +7,13 @@ public sealed partial class CellularFusionComponent : Component
     public string DishSlot = "dishSlot";
 
     [DataField]
-    public float SpliceDelay = 5f;
+    public TimeSpan SpliceDelay = TimeSpan.FromSeconds(5);
 
     [ViewVariables]
     public bool SpliceInProgress => SpliceEndTime != null;
 
     [ViewVariables, AutoPausedField]
     public TimeSpan? SpliceEndTime;
-
-    [ViewVariables]
-    public TimeSpan SpliceDuration;
 
     [ViewVariables]
     public BiologicalSample? SpliceSampleA;
@@ -26,13 +23,4 @@ public sealed partial class CellularFusionComponent : Component
 
     [ViewVariables]
     public EntityUid? SpliceDish;
-
-    [ViewVariables]
-    public int SpliceRevision;
-
-    [ViewVariables]
-    public EntityUid? ObservedDish;
-
-    [ViewVariables]
-    public int ObservedRevision = -1;
 }
