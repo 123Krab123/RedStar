@@ -79,7 +79,7 @@ public sealed partial class CellularFusionSystem : EntitySystem
             return;
         if (!CanStabilize(first, second, out _))
         {
-            _popup.PopupEntity(Loc.GetString("cellular-fusion-incompatible"), ent, PopupType.MediumCaution);
+            _popup.PopupEntity(Loc.GetString("cellular-fusion-incompatible"), ent, args.Actor, PopupType.MediumCaution);
             return;
         }
 
@@ -135,7 +135,6 @@ public sealed partial class CellularFusionSystem : EntitySystem
             UpdateUI(ent);
             return;
         }
-        _popup.PopupEntity(Loc.GetString("cellular-fusion-splice-success"), ent, PopupType.Medium);
     }
 
     private bool CanStabilize(BiologicalSample first, BiologicalSample second, out GenomeSnapshot? genome)
