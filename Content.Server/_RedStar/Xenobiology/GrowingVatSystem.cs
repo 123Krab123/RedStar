@@ -7,7 +7,6 @@ using Content.Shared._RedStar.Xenobiology.Visuals;
 using Content.Shared.Chemistry.Components;
 using Content.Shared.Chemistry.EntitySystems;
 using Content.Shared.Climbing.Systems;
-using Content.Shared.DragDrop;
 using Content.Shared.Mobs;
 using Content.Shared.Mobs.Components;
 using Content.Shared.Mobs.Systems;
@@ -16,7 +15,6 @@ using Content.Shared.Power;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Containers;
 using Robust.Shared.Prototypes;
-using Robust.Shared.Random;
 using Robust.Shared.Timing;
 
 namespace Content.Server._RedStar.Xenobiology;
@@ -35,7 +33,6 @@ public sealed partial class GrowingVatSystem : EntitySystem
     [Dependency] private SharedPopupSystem _popup = default!;
     [Dependency] private MobStateSystem _mobState = default!;
     [Dependency] private SharedAppearanceSystem _appearance = default!;
-    [Dependency] private IRobustRandom _random = default!;
     [Dependency] private IPrototypeManager _prototypes = default!;
 
     [SubscribeLocalEvent]
@@ -43,76 +40,44 @@ public sealed partial class GrowingVatSystem : EntitySystem
         _appearance.SetData(ent, GrowingVatVisuals.Processing, false);
 
     [SubscribeLocalEvent]
-    private void OnPowerChanged(Entity<GrowingVatComponent> ent, ref PowerChangedEvent args)
+    private void OnPowerChanged(Entity<GrowingVatComponent> ent, ref PowerChangedEvent args) =>
+        ent.Comp.NeedsEvaluation = true;
+
+    [SubscribeLocalEvent]
+    private void OnSolutionChanged(Entity<GrowingVatComponent> ent, ref SolutionChangedEvent args) =>
+        ent.Comp.NeedsEvaluation = true;
+
+    [SubscribeLocalEvent]
+    private void OnGenomeChanged(Entity<GrowingVatComponent> ent, ref ContainedGenomeChangedEvent args) =>
+        ent.Comp.NeedsEvaluation = true;
+
+    [SubscribeLocalEvent]
+    private void OnMobChanged(Entity<GenomeComponent> ent, ref MobStateChangedEvent args)
     {
-        Cancel(ent);
-        if (args.Powered)
-            TryStart(ent);
+        if (_containers.TryGetContainingContainer(ent.Owner, out var slot) &&
+            TryComp<GrowingVatComponent>(slot.Owner, out var vat) && slot.ID == vat.SubjectSlot)
+            vat.NeedsEvaluation = true;
     }
 
     [SubscribeLocalEvent]
-    private void OnSolutionChanged(Entity<GrowingVatComponent> ent, ref SolutionChangedEvent args)
+    private void OnInsertAttempt(Entity<GrowingVatComponent> ent, ref ContainerIsInsertingAttemptEvent args)
     {
-        if (ent.Comp.Completing)
-            return;
-        if (ent.Comp.Subject is { } subject && TryGetActiveRecipe(ent, subject, out _, out _))
-            return;
-        Cancel(ent);
-        TryStart(ent);
-    }
-
-    [SubscribeLocalEvent]
-    private void OnGenomeChanged(Entity<GrowingVatComponent> ent, ref ContainedGenomeChangedEvent args) => RefreshSubject(args.Subject);
-
-    [SubscribeLocalEvent]
-    private void OnMobChanged(Entity<GenomeComponent> ent, ref MobStateChangedEvent args) => RefreshSubject(ent.Owner);
-
-    private void RefreshSubject(EntityUid subject)
-    {
-        if (!_containers.TryGetContainingContainer(subject, out var slot) ||
-            !TryComp<GrowingVatComponent>(slot.Owner, out var component) || slot.ID != component.SubjectSlot ||
-            component.Completing)
-            return;
-        var vat = new Entity<GrowingVatComponent>(slot.Owner, component);
-        Cancel(vat);
-        if (!IsValidSubject(subject))
-            Eject(vat, subject);
-        else
-            TryStart(vat);
-    }
-
-    [SubscribeLocalEvent]
-    private void OnCanDrop(Entity<GrowingVatComponent> ent, ref CanDropTargetEvent args)
-    {
-        args.Handled = true;
-        args.CanDrop = IsValidSubject(args.Dragged) &&
-                       _containers.TryGetContainer(ent.Owner, ent.Comp.SubjectSlot, out var container) &&
-                       _containers.CanInsert(args.Dragged, container);
-    }
-
-    [SubscribeLocalEvent]
-    private void OnDragDrop(Entity<GrowingVatComponent> ent, ref DragDropTargetEvent args)
-    {
-        if (args.Handled || !IsValidSubject(args.Dragged) ||
-            !_containers.TryGetContainer(ent.Owner, ent.Comp.SubjectSlot, out var container) ||
-            !_containers.CanInsert(args.Dragged, container))
-            return;
-
-        args.Handled = _containers.Insert(args.Dragged, container);
+        if (args.Container.ID == ent.Comp.SubjectSlot && !IsValidSubject(args.EntityUid))
+            args.Cancel();
     }
 
     [SubscribeLocalEvent]
     private void OnInserted(Entity<GrowingVatComponent> ent, ref EntInsertedIntoContainerMessage args)
     {
         if (args.Container.ID == ent.Comp.SubjectSlot)
-            TryStart(ent);
+            ent.Comp.NeedsEvaluation = true;
     }
 
     [SubscribeLocalEvent]
     private void OnContainerRemoved(Entity<GrowingVatComponent> ent, ref EntRemovedFromContainerMessage args)
     {
         if (args.Container.ID == ent.Comp.SubjectSlot)
-            Cancel(ent);
+            ent.Comp.NeedsEvaluation = true;
     }
 
     [SubscribeLocalEvent]
@@ -143,10 +108,7 @@ public sealed partial class GrowingVatSystem : EntitySystem
         if (!_solutions.TryGetSolution(vat.Owner, vat.Comp.Solution, out _, out var mixture))
             return false;
 
-        var recipes = _prototypes.EnumeratePrototypes<GeneticMutationPrototype>()
-            .OrderByDescending(r => r.RequiredGenes.Count)
-            .ThenBy(r => r.ID, StringComparer.Ordinal);
-        foreach (var candidate in recipes)
+        foreach (var candidate in _prototypes.EnumeratePrototypes<GeneticMutationPrototype>())
         {
             if (!Eligible(subject, candidate, mixture))
                 continue;
@@ -186,6 +148,21 @@ public sealed partial class GrowingVatSystem : EntitySystem
         return true;
     }
 
+    private void Evaluate(Entity<GrowingVatComponent> vat)
+    {
+        if (_containers.TryGetContainer(vat.Owner, vat.Comp.SubjectSlot, out var container) &&
+            container.ContainedEntities.FirstOrDefault() is { Valid: true } occupant && !IsValidSubject(occupant))
+            Eject(vat, occupant);
+
+        if (vat.Comp.Subject is { } subject && this.IsPowered(vat.Owner, EntityManager) &&
+            TryGetSubject(vat, out var contained) && subject == contained &&
+            TryGetActiveRecipe(vat, subject, out _, out _))
+            return;
+
+        Cancel(vat);
+        TryStart(vat);
+    }
+
     private void TryStart(Entity<GrowingVatComponent> vat)
     {
         if (vat.Comp.Subject is not null || !this.IsPowered(vat.Owner, EntityManager) ||
@@ -212,8 +189,8 @@ public sealed partial class GrowingVatSystem : EntitySystem
             !container.Contains(subject))
             return;
 
-        _climb.ForciblySetClimbing(subject, vat.Owner);
-        _containers.Remove(subject, container);
+        if (_containers.Remove(subject, container))
+            _climb.ForciblySetClimbing(subject, vat.Owner);
     }
 
     private void UpdateVisual(Entity<GrowingVatComponent> vat, bool processing)
@@ -234,10 +211,17 @@ public sealed partial class GrowingVatSystem : EntitySystem
         var query = EntityQueryEnumerator<GrowingVatComponent, MetaDataComponent>();
         while (query.MoveNext(out var uid, out var component, out var metadata))
         {
-            if (metadata.EntityPaused || component.EndTime is not { } end || _timing.CurTime < end)
+            if (metadata.EntityPaused)
                 continue;
 
             var vat = new Entity<GrowingVatComponent>(uid, component);
+            if (component.NeedsEvaluation)
+            {
+                component.NeedsEvaluation = false;
+                Evaluate(vat);
+            }
+            if (component.EndTime is not { } end || _timing.CurTime < end)
+                continue;
             if (component.Subject is not { } subject || !this.IsPowered(uid, EntityManager) ||
                 !TryGetSubject(vat, out var contained) || subject != contained ||
                 !TryGetActiveRecipe(vat, subject, out var recipe, out var solution))
@@ -246,16 +230,12 @@ public sealed partial class GrowingVatSystem : EntitySystem
                 continue;
             }
 
-            // Chemical and genome events caused by this transaction must not start another cycle.
-            component.Completing = true;
             Cancel(vat);
             SpendReagents(solution, recipe!);
-            var success = _random.Prob(recipe!.Chance) &&
-                _genomes.TryTransformGenes(subject, recipe.RequiredGenes, recipe.ResultGene);
+            var success = _genomes.TryTransformGenes(subject, recipe!.RequiredGenes, recipe.ResultGene);
             _popup.PopupEntity(Loc.GetString(success ? "growing-vat-success" : "growing-vat-failure"),
                 vat, success ? PopupType.Medium : PopupType.MediumCaution);
             Eject(vat, subject);
-            component.Completing = false;
         }
     }
 }
