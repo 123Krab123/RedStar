@@ -4,10 +4,10 @@ using Content.Client.Guidebook.Controls;
 using Content.Client.Guidebook.Richtext;
 using Content.Client.Message;
 using Content.Client.UserInterface.ControlExtensions;
-using Content.Shared._RedStar.Genetics;
+using Content.Shared._RedStar.Genetics.Prototypes;
 using JetBrains.Annotations;
-using Robust.Client.UserInterface;
 using Robust.Client.Graphics;
+using Robust.Client.UserInterface;
 using Robust.Client.UserInterface.Controls;
 using Robust.Shared.Prototypes;
 
@@ -74,6 +74,11 @@ public sealed partial class GuideGeneGroupEmbed : BoxContainer, IDocumentTag
             header.AddChild(new Label
             {
                 Text = Loc.GetString("guidebook-genetic-mutation-tier", ("tier", gene.Tier)),
+            });
+            body.AddChild(new Label
+            {
+                Text = Loc.GetString("guidebook-gene-properties", ("load", gene.LoadCost),
+                    ("category", Loc.GetString($"guidebook-gene-category-{gene.Category.ToString().ToLowerInvariant()}"))),
             });
             var description = new RichTextLabel();
             description.SetMessage(Loc.GetString($"gene-{gene.ID}-desc"));
