@@ -1,6 +1,6 @@
-﻿- type: entity
+- type: entity
+  parent: [ PlastitaniumWindowSquareBase, BaseTitaniumWindowHealth ]
   id: TitaniumWindow
-  parent: PlastitaniumWindow
   name: titanium window
   components:
   - type: Construction
@@ -17,24 +17,10 @@
     - !type:CornerSpriteSmoothing
       mask: [ walls, windows, grilles, marble, doors ]
       base: window
-  - type: Destructible
-    thresholds:
-    - trigger:
-        !type:DamageTrigger
-        damage: 80
-      behaviors:
-      - !type:PlaySoundBehavior
-        sound:
-          collection: WindowShatter
-      - !type:SpawnEntitiesBehavior
-        spawn:
-          ShardGlassTitanium:
-            min: 1
-            max: 2
 
 - type: entity
+  parent: [ PlastitaniumWindowDiagonalBase, BaseTitaniumWindowHealth ]
   id: TitaniumWindowDiagonalPlain
-  parent: PlastitaniumWindowDiagonal
   name: titanium window
   components:
   - type: Construction
@@ -45,17 +31,6 @@
   - type: Icon
     sprite: _RedStar/Structures/Windows/window-diagonal-titanium.rsi
     state: state0
-  - type: Destructible
-    thresholds:
-    - trigger:
-        !type:DamageTrigger
-        damage: 80
-      behaviors:
-      - !type:PlaySoundBehavior
-        sound:
-          collection: WindowShatter
-      - !type:SpawnEntitiesBehavior
-        spawn:
-          ShardGlassTitanium:
-            min: 1
-            max: 2
+  - type: DamageVisuals
+    damageOverlay:
+      sprite: Structures/Windows/cracks-diagonal.rsi
