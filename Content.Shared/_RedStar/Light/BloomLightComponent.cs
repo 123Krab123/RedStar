@@ -12,6 +12,12 @@ namespace Content.Shared.Light;
 public sealed partial class BloomLightComponent : Component, IComponentTreeEntry<BloomLightComponent>
 {
     [DataField]
+    public bool Enabled = true;
+
+    [DataField]
+    public Color Tint = Color.White;
+
+    [DataField]
     public SpriteSpecifier Mask = new SpriteSpecifier.Rsi(new ResPath("_RedStar/Effects/LightMasks/128.rsi"), "light_cone");
 
     [DataField]
@@ -22,6 +28,6 @@ public sealed partial class BloomLightComponent : Component, IComponentTreeEntry
 
     public EntityUid? TreeUid { get; set; }
     public DynamicTree<ComponentTreeEntry<BloomLightComponent>>? Tree { get; set; }
-    public bool AddToTree => true;
+    public bool AddToTree => Enabled;
     public bool TreeUpdateQueued { get; set; }
 }
