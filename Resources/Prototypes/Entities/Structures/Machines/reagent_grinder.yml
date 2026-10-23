@@ -50,8 +50,8 @@
   - type: Sprite
     sprite: Structures/Machines/grinder.rsi
     drawdepth: LargeObjects
-    snapCardinals: false # RS14
-    offset: "0.0,0.4"
+    snapCardinals: true
+    offset: "0.0,0.1"
     layers:
     - map: [ "grinder" ]
       state: "grinder_empty"
