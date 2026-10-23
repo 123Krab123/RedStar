@@ -52625,8 +52625,7 @@ entities:
       pos: -16.5,20.5
     - type: LinkedDeviceNetwork
       deviceLists: []
-      configurators:
-      - invalid
+      configurators: []
   - uid: 4513
     components:
     - type: Transform
@@ -52713,8 +52712,7 @@ entities:
     - type: LinkedDeviceNetwork
       deviceLists:
       - 12888
-      configurators:
-      - invalid
+      configurators: []
   - uid: 10112
     components:
     - type: Transform
@@ -53500,8 +53498,7 @@ entities:
       pos: -14.5,20.5
     - type: LinkedDeviceNetwork
       deviceLists: []
-      configurators:
-      - invalid
+      configurators: []
   - uid: 5882
     components:
     - type: Transform
@@ -54177,8 +54174,7 @@ entities:
     - type: LinkedDeviceNetwork
       deviceLists:
       - 12888
-      configurators:
-      - invalid
+      configurators: []
 - proto: GeneratorBasic15kW
   entities:
   - uid: 3673

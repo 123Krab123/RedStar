@@ -59997,8 +59997,7 @@ entities:
       pos: 6.5,-36.5
     - type: LinkedDeviceNetwork
       deviceLists: []
-      configurators:
-      - invalid
+      configurators: []
   - uid: 11254
     components:
     - type: Transform
@@ -60007,8 +60006,7 @@ entities:
       pos: 10.5,-43.5
     - type: LinkedDeviceNetwork
       deviceLists: []
-      configurators:
-      - invalid
+      configurators: []
   - uid: 11962
     components:
     - type: Transform
@@ -60147,8 +60145,7 @@ entities:
       pos: 10.5,-36.5
     - type: LinkedDeviceNetwork
       deviceLists: []
-      configurators:
-      - invalid
+      configurators: []
 - proto: GasVentScrubber
   entities:
   - uid: 706
@@ -60958,8 +60955,7 @@ entities:
       pos: 7.5,-43.5
     - type: LinkedDeviceNetwork
       deviceLists: []
-      configurators:
-      - invalid
+      configurators: []
   - uid: 14239
     components:
     - type: Transform
@@ -60967,8 +60963,7 @@ entities:
       pos: 5.5,-36.5
     - type: LinkedDeviceNetwork
       deviceLists: []
-      configurators:
-      - invalid
+      configurators: []
   - uid: 14347
     components:
     - type: Transform
@@ -60977,8 +60972,7 @@ entities:
       pos: 10.5,-38.5
     - type: LinkedDeviceNetwork
       deviceLists: []
-      configurators:
-      - invalid
+      configurators: []
 - proto: GasVolumePump
   entities:
   - uid: 13225

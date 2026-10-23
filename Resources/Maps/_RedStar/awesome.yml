@@ -78544,8 +78544,7 @@ entities:
     - type: LinkedDeviceNetwork
       deviceLists:
       - 19620
-      configurators:
-      - invalid
+      configurators: []
 - proto: GasVentScrubber
   entities:
   - uid: 169
@@ -79583,8 +79582,7 @@ entities:
     - type: LinkedDeviceNetwork
       deviceLists:
       - 19620
-      configurators:
-      - invalid
+      configurators: []
 - proto: GasVolumePump
   entities:
   - uid: 9962
@@ -86230,7 +86228,6 @@ entities:
           layer: []
     - type: ThrownItem
       thrownTime: 6391.7269416
-      thrower: invalid
       playLandSound: True
       landTime: 6391.7486517
 - proto: HandLabeler
@@ -88966,7 +88963,6 @@ entities:
       bodyStatus: InAir
     - type: ThrownItem
       thrownTime: 4898.6284347
-      thrower: invalid
       playLandSound: True
       landTime: 4898.6386619
 - proto: MousetrapArmed
@@ -109677,7 +109673,6 @@ entities:
           layer: []
     - type: ThrownItem
       thrownTime: 4891.6284417
-      thrower: invalid
       playLandSound: True
       landTime: 4891.6514513
 - proto: VehicleJanicart
