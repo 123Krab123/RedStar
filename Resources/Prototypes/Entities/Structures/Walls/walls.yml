@@ -140,14 +140,28 @@
             min: 1
             max: 1
   - type: IconSmooth
-    key: walls
+    key: walls-material
     states:
     - !type:CornerSpriteSmoothing
       mask:
-      - walls
       - windows
+      - windows-reinf
+      - windows-tinted
+      - windows-plasma
+      - windows-plasma-reinf
+      - windows-uranium
+      - windows-uranium-reinf
+      - windows-exo
+      - windows-shuttle
+      - windows-plastitanium
+      - windows-regal
+      - walls-exo
+      - walls-shuttle
+      - walls-plastitanium
+      - walls-material
+      - walls-marble
+      - walls
       - grilles
-      - marble
       - doors
       base: brick
 
@@ -177,14 +191,28 @@
       - &ChangeNodeGirder !type:ChangeConstructionNodeBehavior
         node: girder
   - type: IconSmooth
-    key: walls
+    key: walls-material
     states:
     - !type:CornerSpriteSmoothing
       mask:
-      - walls
       - windows
+      - windows-reinf
+      - windows-tinted
+      - windows-plasma
+      - windows-plasma-reinf
+      - windows-uranium
+      - windows-uranium-reinf
+      - windows-exo
+      - windows-shuttle
+      - windows-plastitanium
+      - windows-regal
+      - walls-exo
+      - walls-shuttle
+      - walls-plastitanium
+      - walls-material
+      - walls-marble
+      - walls
       - grilles
-      - marble
       - doors
       base: brass
 
@@ -220,14 +248,28 @@
         sound:
           collection: gib
   - type: IconSmooth
-    key: walls
+    key: walls-material
     states:
     - !type:CornerSpriteSmoothing
       mask:
-      - walls
       - windows
+      - windows-reinf
+      - windows-tinted
+      - windows-plasma
+      - windows-plasma-reinf
+      - windows-uranium
+      - windows-uranium-reinf
+      - windows-exo
+      - windows-shuttle
+      - windows-plastitanium
+      - windows-regal
+      - walls-exo
+      - walls-shuttle
+      - walls-plastitanium
+      - walls-material
+      - walls-marble
+      - walls
       - grilles
-      - marble
       - doors
       base: meat
 
@@ -337,14 +379,28 @@
         - WallLayer
         density: 4000
   - type: IconSmooth
-    key: walls
+    key: walls-material
     states:
     - !type:CornerSpriteSmoothing
       mask:
-      - walls
       - windows
+      - windows-reinf
+      - windows-tinted
+      - windows-plasma
+      - windows-plasma-reinf
+      - windows-uranium
+      - windows-uranium-reinf
+      - windows-exo
+      - windows-shuttle
+      - windows-plastitanium
+      - windows-regal
+      - walls-exo
+      - walls-shuttle
+      - walls-plastitanium
+      - walls-material
+      - walls-marble
+      - walls
       - grilles
-      - marble
       - doors
       base: gold
 
@@ -376,14 +432,28 @@
         spawn:
           SheetPlasma1: *BaseWallSpawn
   - type: IconSmooth
-    key: walls
+    key: walls-material
     states:
     - !type:CornerSpriteSmoothing
       mask:
-      - walls
       - windows
+      - windows-reinf
+      - windows-tinted
+      - windows-plasma
+      - windows-plasma-reinf
+      - windows-uranium
+      - windows-uranium-reinf
+      - windows-exo
+      - windows-shuttle
+      - windows-plastitanium
+      - windows-regal
+      - walls-exo
+      - walls-shuttle
+      - walls-plastitanium
+      - walls-material
+      - walls-marble
+      - walls
       - grilles
-      - marble
       - doors
       base: plasma
   - type: RadiationBlocker
@@ -418,6 +488,7 @@
       - windows-regal
       - walls-exo
       - walls-shuttle
+      - walls-material
       - walls-marble
       - walls
       - grilles
@@ -566,6 +637,7 @@
       - walls-exo
       - walls-shuttle
       - walls-plastitanium
+      - walls-material
       - walls-marble
       - walls
       - grilles
@@ -633,6 +705,7 @@
       - walls-exo
       - walls-shuttle
       - walls-plastitanium
+      - walls-material
       - walls-marble
       - walls
       - grilles
@@ -693,6 +766,7 @@
       - walls-exo
       - walls-shuttle
       - walls-plastitanium
+      - walls-material
       - walls
       - grilles
       - doors
@@ -769,14 +843,28 @@
         spawn:
           IngotSilver1: *BaseWallSpawn
   - type: IconSmooth
-    key: walls
+    key: walls-material
     states:
     - !type:CornerSpriteSmoothing
       mask:
-      - walls
       - windows
+      - windows-reinf
+      - windows-tinted
+      - windows-plasma
+      - windows-plasma-reinf
+      - windows-uranium
+      - windows-uranium-reinf
+      - windows-exo
+      - windows-shuttle
+      - windows-plastitanium
+      - windows-regal
+      - walls-exo
+      - walls-shuttle
+      - walls-plastitanium
+      - walls-material
+      - walls-marble
+      - walls
       - grilles
-      - marble
       - doors
       base: silver
 
@@ -894,6 +982,7 @@
       - windows-regal
       - walls-exo
       - walls-plastitanium
+      - walls-material
       - walls-marble
       - walls
       - grilles
@@ -975,6 +1064,7 @@
       - walls-exo
       - walls-shuttle
       - walls-plastitanium
+      - walls-material
       - walls-marble
       - walls
       - grilles
@@ -1013,31 +1103,32 @@
   - type: Construction
     graph: Girder
     node: wallrust
-  - type: IconSmooth
-    key: walls
-    states:
-    - !type:CardinalCornerSpriteSmoothing
-      mask: [ walls ]
-      altMask:
-      - windows
-      - windows-reinf
-      - windows-tinted
-      - windows-plasma
-      - windows-plasma-reinf
-      - windows-uranium
-      - windows-uranium-reinf
-      - windows-exo
-      - windows-shuttle
-      - windows-plastitanium
-      - windows-regal
-      - walls-exo
-      - walls-shuttle
-      - walls-plastitanium
-      - walls-marble
-      - walls
-      - grilles
-      - doors
-      base: wall
+#  - type: IconSmooth
+#    key: walls
+#    states:
+#    - !type:CardinalCornerSpriteSmoothing
+#      mask: [ walls ]
+#      altMask:
+#      - windows
+#      - windows-reinf
+#      - windows-tinted
+#      - windows-plasma
+#      - windows-plasma-reinf
+#      - windows-uranium
+#      - windows-uranium-reinf
+#      - windows-exo
+#      - windows-shuttle
+#      - windows-plastitanium
+#      - windows-regal
+#      - walls-exo
+#      - walls-shuttle
+#      - walls-plastitanium
+#      - walls-material
+#      - walls-marble
+#      - walls
+#      - grilles
+#      - doors
+#      base: wall
   # Rusted walls should be made weaker through a damage mod status effect.
 
 - type: entity
@@ -1077,6 +1168,7 @@
       - windows-regal
       - walls-shuttle
       - walls-plastitanium
+      - walls-material
       - walls-marble
       - walls
       - grilles
@@ -1144,6 +1236,7 @@
       - windows-regal
       - walls-shuttle
       - walls-plastitanium
+      - walls-material
       - walls-marble
       - walls
       - grilles
@@ -1232,14 +1325,28 @@
         - WallLayer
         density: 6000
   - type: IconSmooth
-    key: walls
+    key: walls-material
     states:
     - !type:CornerSpriteSmoothing
       mask:
-      - walls
       - windows
+      - windows-reinf
+      - windows-tinted
+      - windows-plasma
+      - windows-plasma-reinf
+      - windows-uranium
+      - windows-uranium-reinf
+      - windows-exo
+      - windows-shuttle
+      - windows-plastitanium
+      - windows-regal
+      - walls-exo
+      - walls-shuttle
+      - walls-plastitanium
+      - walls-material
+      - walls-marble
+      - walls
       - grilles
-      - marble
       - doors
       base: uranium
   - type: RadiationBlocker
@@ -1275,14 +1382,28 @@
         spawn:
           MaterialWoodPlank1: *BaseWallSpawn
   - type: IconSmooth
-    key: walls
+    key: walls-material
     states:
     - !type:CornerSpriteSmoothing
       mask:
-      - walls
       - windows
+      - windows-reinf
+      - windows-tinted
+      - windows-plasma
+      - windows-plasma-reinf
+      - windows-uranium
+      - windows-uranium-reinf
+      - windows-exo
+      - windows-shuttle
+      - windows-plastitanium
+      - windows-regal
+      - walls-exo
+      - walls-shuttle
+      - walls-plastitanium
+      - walls-material
+      - walls-marble
+      - walls
       - grilles
-      - marble
       - doors
       base: wood
 
@@ -1316,16 +1437,29 @@
         spawn:
           MaterialWebSilk1: *BaseWallSpawn
   - type: IconSmooth
-    key: webs
+    key: walls-material
     states:
     - !type:CornerSpriteSmoothing
       mask:
-      - walls
       - windows
+      - windows-reinf
+      - windows-tinted
+      - windows-plasma
+      - windows-plasma-reinf
+      - windows-uranium
+      - windows-uranium-reinf
+      - windows-exo
+      - windows-shuttle
+      - windows-plastitanium
+      - windows-regal
+      - walls-exo
+      - walls-shuttle
+      - walls-plastitanium
+      - walls-material
+      - walls-marble
+      - walls
       - grilles
-      - marble
       - doors
-      - webs
       base: wall
   - type: Construction
     graph: WebStructures
@@ -1353,10 +1487,24 @@
     states:
     - !type:CornerSpriteSmoothing
       mask:
-      - walls
       - windows
+      - windows-reinf
+      - windows-tinted
+      - windows-plasma
+      - windows-plasma-reinf
+      - windows-uranium
+      - windows-uranium-reinf
+      - windows-exo
+      - windows-shuttle
+      - windows-plastitanium
+      - windows-regal
+      - walls-exo
+      - walls-shuttle
+      - walls-plastitanium
+      - walls-material
+      - walls-marble
+      - walls
       - grilles
-      - marble
       - doors
       base: mining
   - type: Appearance
@@ -1456,10 +1604,24 @@
     states:
     - !type:CornerSpriteSmoothing
       mask:
-      - walls
       - windows
+      - windows-reinf
+      - windows-tinted
+      - windows-plasma
+      - windows-plasma-reinf
+      - windows-uranium
+      - windows-uranium-reinf
+      - windows-exo
+      - windows-shuttle
+      - windows-plastitanium
+      - windows-regal
+      - walls-exo
+      - walls-shuttle
+      - walls-plastitanium
+      - walls-material
+      - walls-marble
+      - walls
       - grilles
-      - marble
       - doors
       base: concrete
 
@@ -1521,7 +1683,10 @@
     key: cards
     states:
     - !type:CornerSpriteSmoothing
-      mask: [ cards ]
+      mask:
+      - cards
+      - grilles
+      - doors
       base: card
   - type: Occluder
   - type: BlockWeather
